@@ -17,24 +17,24 @@ if [ -n "$DATABASE_URL" ]; then
 
   # extract the user and password (if any)
   userpass=$(echo $url | grep @ | sed -r 's/^(.*)@([^@]*)$/\1/')
-  DB_PASSWORD="$(echo $userpass | grep : | cut -d: -f2)"
-  if [ -n "$DB_PASSWORD" ]; then
-    DB_USER=$(echo $userpass | grep : | cut -d: -f1)
+  POSTGRES_PASSWORD="$(echo $userpass | grep : | cut -d: -f2)"
+  if [ -n "$POSTGRES_PASSWORD" ]; then
+    POSTGRES_USER=$(echo $userpass | grep : | cut -d: -f1)
   else
-    DB_USER=$userpass
+    POSTGRES_USER=$userpass
   fi
 
   # extract the host -- updated
   hostport=`echo $url | sed -e s,$userpass@,,g | cut -d/ -f1`
   port=`echo $hostport | grep : | cut -d: -f2`
   if [ -n "$port" ]; then
-      DB_HOST=`echo $hostport | grep : | cut -d: -f1`
-      DB_PORT=$port
+      POSTGRES_HOST=`echo $hostport | grep : | cut -d: -f1`
+      POSTGRES_PORT=$port
   else
-      DB_HOST=$hostport
+      POSTGRES_HOST=$hostport
   fi
 
-  DB_NAME="$(echo $url | grep / | cut -d/ -f2-)"
+  POSTGRES_DATABASE="$(echo $url | grep / | cut -d/ -f2-)"
 fi
 
 # Write the password with MD5 encryption, to avoid printing it during startup.
@@ -47,13 +47,13 @@ if [ ! -e "${_AUTH_FILE}" ]; then
   touch "${_AUTH_FILE}"
 fi
 
-if [ -n "$DB_USER" -a -n "$DB_PASSWORD" -a -e "${_AUTH_FILE}" ] && ! grep -q "^\"$DB_USER\"" "${_AUTH_FILE}"; then
+if [ -n "$POSTGRES_USER" -a -n "$POSTGRES_PASSWORD" -a -e "${_AUTH_FILE}" ] && ! grep -q "^\"$POSTGRES_USER\"" "${_AUTH_FILE}"; then
   if [ "$AUTH_TYPE" != "plain" ]; then
-     pass="md5$(echo -n "$DB_PASSWORD$DB_USER" | md5sum | cut -f 1 -d ' ')"
+     pass="md5$(echo -n "$POSTGRES_PASSWORD$POSTGRES_USER" | md5sum | cut -f 1 -d ' ')"
   else
-     pass="$DB_PASSWORD"
+     pass="$POSTGRES_PASSWORD"
   fi
-  echo "\"$DB_USER\" \"$pass\"" >> ${PG_CONFIG_DIR}/userlist.txt
+  echo "\"$POSTGRES_USER\" \"$pass\"" >> ${PG_CONFIG_DIR}/userlist.txt
   echo "Wrote authentication credentials to ${PG_CONFIG_DIR}/userlist.txt"
 fi
 
@@ -66,8 +66,8 @@ if [ ! -f ${PG_CONFIG_DIR}/pgbouncer.ini ]; then
   printf "\
 ################## Auto generated ##################
 [databases]
-${DB_NAME:-*} = host=${DB_HOST:?"Setup pgbouncer config error! You must set DB_HOST env"} \
-port=${DB_PORT:-5432} user=${DB_USER:-postgres}
+${POSTGRES_DATABASE:-*} = host=${POSTGRES_HOST:?"Setup pgbouncer config error! You must set POSTGRES_HOST env"} \
+port=${POSTGRES_PORT:-5432} user=${POSTGRES_USER:-postgres}
 ${CLIENT_ENCODING:+client_encoding = ${CLIENT_ENCODING}\n}\
 
 [pgbouncer]
