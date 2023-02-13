@@ -8,12 +8,12 @@ set -e
 
 PG_CONFIG_DIR=/etc/pgbouncer
 
-if [ -n "$DATABASE_URL" ]; then
+if [ -n "$TIMESCALEDB_URL" ]; then
   # Thanks to https://stackoverflow.com/a/17287984/146289
 
   # Allow to pass values like dj-database-url / django-environ accept
-  proto="$(echo $DATABASE_URL | grep :// | sed -e's,^\(.*://\).*,\1,g')"
-  url="$(echo $DATABASE_URL | sed -e s,$proto,,g)"
+  proto="$(echo $TIMESCALEDB_URL | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+  url="$(echo $TIMESCALEDB_URL | sed -e s,$proto,,g)"
 
   # extract the user and password (if any)
   userpass=$(echo $url | grep @ | sed -r 's/^(.*)@([^@]*)$/\1/')
